@@ -25,6 +25,13 @@ def open_with_python_csv_list(filename):
                 yield row[4]
     return yield_fn
 
+# similar function to get data from exported chubnks:
+def parse_chunk(data_chunk):
+    def yield_fn():
+        dt = data_chunk
+        yield dt[4]
+    return yield_fn()
+
 #source function gets dta asrows
 def search_term(source_fn, phrase):
     hash_tags_global = Counter()
@@ -76,17 +83,9 @@ def read_in_chunks(file_object, chunk_size=1024):
             break
         yield data
 
-def process_data(data_chunk):
-    data = data_chunk.split(",")
-    for row in data:
-
-           # dt = json.loads(row)
-           # print dt
-
-#how do I work with the chunks:
-def process_data_function(source_fn):
-    for piece in source_fn():
-        print piece
+def process_data(data_chunk,phrase):
+    data = search_term(parse_chunk(data_chunk),phrase)
+    return data
 
 def master_process(file_name,file_size):
      summary ={}
@@ -108,13 +107,13 @@ def master_process(file_name,file_size):
         comm.send(obj=None, dest=i, tag=DIETAG)
      return summary
 
-def slave_process():
+def slave_process(search_phrase):
     comm = MPI.COMM_WORLD
     status = MPI.Status()
     while True:
         data = comm.recv(obj=None, source=0, tag=MPI.ANY_TAG, status=status)
         if status.Get_tag(): break
-        comm.send(obj=process_data(data), dest=0)
+        comm.send(obj=process_data(data,search_phrase), dest=0)
 
 #print provided data
 def print_data(out_put):
@@ -137,11 +136,12 @@ def main():
    if size==1:
         single_process_search(file_name,search_phrase)
    else:
+       #broadcast phrase to all processes!!!
         if(rank==0):
             file_size = os.stat('file_name').st_size
             output = master_process(file_name,file_size)
         else:
-            slave_process()
+            slave_process(search_phrase)
    comm.Barrier()
    t_diff = MPI.Wtime()-t_start
 
