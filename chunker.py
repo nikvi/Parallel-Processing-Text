@@ -94,7 +94,7 @@ def process_data(data_chunk,phrase):
 def master_process(file_name,file_size):
      summary = {}
      comm = MPI.COMM_WORLD
-     size = comm.get_size
+     size = comm.size
      chunk_size = file_size/size
      reader = csv.reader(open(file_name, 'rb'), delimiter=csv_delimiter, quotechar='\"')
      next(reader)
@@ -131,8 +131,8 @@ def print_data(out_put):
 #how to chunk data and send
 def main():
    comm = MPI.COMM_WORLD
-   size=comm.get_size()
-   rank=comm.get_rank()
+   size= comm.size
+   rank=comm.rank
    file_name = "miniTwitter.csv"
    search_phrase ="how"
    comm.Barrier()
