@@ -100,14 +100,14 @@ def master_process(file_name,file_size):
      next(reader)
      count = 1
      batch_send =1
-     for chunk in gen_chunks(reader,10):
+     for chunk in gen_chunks(reader,chunk_size):
          comm.send(chunk, dest=count, tag=WORKTAG)
          count+=1
          batch_send += 1
          if count >= size:
              count=1
 
-     for i in range(1,batch_send):
+     for i in range(1,size):
         data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
         summary = merge_search(summary,data)
 
@@ -150,7 +150,7 @@ def main():
         if(rank==0):
             print "Hello! I'm rank %d from %d running in total..." % (rank,size)
             file_size = os.stat(file_name).st_size
-            output = master_process(file_name,file_size)
+            output = master_process(file_name,200)
             print_data(output)
         else:
             slave_process(search_phrase)
