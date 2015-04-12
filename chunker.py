@@ -138,12 +138,12 @@ def main():
    comm.Barrier()
    t_start = MPI.Wtime()
    if size==1:
-        print "Hello! I'm rank %d from %d running in total..." % (comm.rank, comm.size)
+        print "Hello! I'm rank %d from %d running in total..." % (rank,size)
         output = single_process_search(file_name,search_phrase)
         print_data(output)
    else:
         if(rank==0):
-            print "Hello! I'm rank %d from %d running in total..." % (comm.rank, comm.size)
+            print "Hello! I'm rank %d from %d running in total..." % (rank,size)
             file_size = os.stat('file_name').st_size
             output = master_process(file_name,file_size)
             print_data(output)
