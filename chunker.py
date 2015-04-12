@@ -99,7 +99,7 @@ def master_process(file_name,file_size):
      reader = csv.reader(open(file_name, 'rb'), delimiter=csv_delimiter, quotechar='\"')
      next(reader)
      count =1
-     for chunk in gen_chunks(reader):
+     for chunk in gen_chunks(reader,10):
          comm.send(obj=chunk, dest=count, tag=WORKTAG)
          count+=1
      for i in range(1,count):
