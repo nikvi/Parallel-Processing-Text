@@ -99,11 +99,9 @@ def master_process(file_name,file_size):
      reader = csv.reader(open(file_name, 'rb'), delimiter=csv_delimiter, quotechar='\"')
      next(reader)
      count = 1
-     batch_send =1
      for chunk in gen_chunks(reader,chunk_size):
          comm.send(chunk, dest=count, tag=WORKTAG)
          count+=1
-         batch_send += 1
          if count >= size:
              count=1
 
