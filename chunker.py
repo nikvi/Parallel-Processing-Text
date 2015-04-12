@@ -179,5 +179,5 @@ def sample_chunk():
 
 
 if __name__ == "__main__":
-    #main()
-    sample_chunk()
+    main()
+    #sample_chunk()
