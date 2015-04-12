@@ -30,9 +30,10 @@ def open_with_python_csv_list(filename):
 # similar function to get data from exported chubnks:
 def parse_chunk(data_chunk):
     def yield_fn():
-        dt = data_chunk
-        yield dt[4]
-    return yield_fn()
+        for i,val in enumerate(data_chunk):
+            if(val !=0):
+                yield val[4]
+    return yield_fn
 
 #source function gets dta asrows
 def search_term(source_fn, phrase):
@@ -67,9 +68,10 @@ def merge_search(*args):
     total_mentions = Counter()
     total_hashtags = Counter()
     for args in args:
-        total_count += args["count"]
-        total_mentions.update(args["mentions"])
-        total_hashtags.update(args["hashtags"])
+        if(args != {}):
+            total_count += args["count"]
+            total_mentions.update(args["mentions"])
+            total_hashtags.update(args["hashtags"])
     return {
         "count": total_count,
         "mentions": dict(total_mentions),
@@ -86,8 +88,9 @@ def read_in_chunks(file_object, chunk_size=1024):
         yield data
 
 def process_data(data_chunk,phrase):
-    data = search_term(parse_chunk(data_chunk),phrase)
-    return data
+   out1 = search_term(parse_chunk(data_chunk), phrase)
+   print_data(out1)
+   return out1
 '''
 def master_process(file_name,file_size):
      summary = {}
@@ -153,22 +156,24 @@ def main():
 
 
 def gen_chunks(reader, chunk_size=100):
-        fields = [('id', int), ('flags', int),('expiration',int),('cas',int),('value', str)]
-        chunk = np.zeros((chunk_size,), dtype=fields)
+        chunk = np.zeros((chunk_size,), dtype=object)
         for i, line in enumerate(reader):
-            if (i % chunk_size == 0 and i > 0):
+            k = i%chunk_size
+            if (k == 0 and i > 0):
                 yield chunk
-                del chunk[:]
-            chunk[i] = line
+                chunk = np.zeros((chunk_size,), dtype=object)
+            chunk[k] = line
         yield chunk
 
 
 def sample_chunk():
-
-    reader = csv.reader(open('twitter-2.csv', 'rb'), delimiter=csv_delimiter, quotechar='\"')
+    reader = csv.reader(open('miniTwitter.csv', 'rb'), delimiter=csv_delimiter, quotechar='\"')
     next(reader)
+    summary = {}
     for chunk in gen_chunks(reader):
-        print chunk
+        data = process_data(chunk,"how")
+        summary = merge_search(summary,data)
+    print_data(summary)
 
 
 if __name__ == "__main__":
