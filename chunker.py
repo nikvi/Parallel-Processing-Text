@@ -1,8 +1,10 @@
 __author__ = 'nikki'
 import os
-from mpi4py import MPI
+#from mpi4py import MPI
 import csv
 import re
+import numpy as np
+import itertools
 from collections import Counter
 from json import loads
 
@@ -86,9 +88,9 @@ def read_in_chunks(file_object, chunk_size=1024):
 def process_data(data_chunk,phrase):
     data = search_term(parse_chunk(data_chunk),phrase)
     return data
-
+'''
 def master_process(file_name,file_size):
-     summary ={}
+     summary = {}
      comm = MPI.COMM_WORLD
      size = comm.get_size
      chunk_size = file_size/size
@@ -114,17 +116,19 @@ def slave_process(search_phrase):
         data = comm.recv(obj=None, source=0, tag=MPI.ANY_TAG, status=status)
         if status.Get_tag(): break
         comm.send(obj=process_data(data,search_phrase), dest=0)
+        '''
 
 #print provided data
 def print_data(out_put):
     count_t = out_put["count"]
-    mentions_t =  Counter(out_put["mentions"]).most_common(10)
+    mentions_t = Counter(out_put["mentions"]).most_common(10)
     hashtags_t = Counter(out_put["hashtags"]).most_common(10)
     print count_t
     print mentions_t
     print hashtags_t
 
 #how to chunk data and send
+'''
 def main():
    comm = MPI.COMM_WORLD
    size=comm.get_size()
@@ -144,6 +148,29 @@ def main():
             slave_process(search_phrase)
    comm.Barrier()
    t_diff = MPI.Wtime()-t_start
+   '''
+#use numpy
+
+
+def gen_chunks(reader, chunk_size=100):
+        fields = [('id', int), ('flags', int),('expiration',int),('cas',int),('value', str)]
+        chunk = np.zeros((chunk_size,), dtype=fields)
+        for i, line in enumerate(reader):
+            if (i % chunk_size == 0 and i > 0):
+                yield chunk
+                del chunk[:]
+            chunk[i] = line
+        yield chunk
+
+
+def sample_chunk():
+
+    reader = csv.reader(open('twitter-2.csv', 'rb'), delimiter=csv_delimiter, quotechar='\"')
+    next(reader)
+    for chunk in gen_chunks(reader):
+        print chunk
+
 
 if __name__ == "__main__":
-    main()
+    #main()
+    sample_chunk()
