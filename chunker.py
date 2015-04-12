@@ -144,7 +144,7 @@ def main():
    else:
         if(rank==0):
             print "Hello! I'm rank %d from %d running in total..." % (rank,size)
-            file_size = os.stat('file_name').st_size
+            file_size = os.stat(file_name).st_size
             output = master_process(file_name,file_size)
             print_data(output)
         else:
