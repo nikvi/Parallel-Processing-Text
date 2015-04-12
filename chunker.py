@@ -1,6 +1,6 @@
 __author__ = 'nikki'
 import os
-#from mpi4py import MPI
+from mpi4py import MPI
 import csv
 import re
 import numpy as np
@@ -91,20 +91,19 @@ def process_data(data_chunk,phrase):
    out1 = search_term(parse_chunk(data_chunk), phrase)
    print_data(out1)
    return out1
-'''
+
 def master_process(file_name,file_size):
      summary = {}
      comm = MPI.COMM_WORLD
      size = comm.get_size
      chunk_size = file_size/size
-     if (chunk_size*size) != file_size:
-         chunk_size+=1
+     reader = csv.reader(open(file_name, 'rb'), delimiter=csv_delimiter, quotechar='\"')
+     next(reader)
      count =1
-     with open(file_name) as f:
-            for piece in read_in_chunks(f,chunk_size):
-                comm.send(obj=piece, dest=count, tag=WORKTAG)
-                count+=1
-     for i in range(1,size):
+     for chunk in gen_chunks(reader):
+         comm.send(obj=chunk, dest=count, tag=WORKTAG)
+         count+=1
+     for i in range(1,count):
         data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
         summary = merge_search(summary,data)
 
@@ -119,7 +118,7 @@ def slave_process(search_phrase):
         data = comm.recv(obj=None, source=0, tag=MPI.ANY_TAG, status=status)
         if status.Get_tag(): break
         comm.send(obj=process_data(data,search_phrase), dest=0)
-        '''
+
 
 #print provided data
 def print_data(out_put):
@@ -131,7 +130,6 @@ def print_data(out_put):
     print hashtags_t
 
 #how to chunk data and send
-'''
 def main():
    comm = MPI.COMM_WORLD
    size=comm.get_size()
@@ -141,17 +139,17 @@ def main():
    comm.Barrier()
    t_start = MPI.Wtime()
    if size==1:
-        single_process_search(file_name,search_phrase)
+        output = single_process_search(file_name,search_phrase)
    else:
-       #broadcast phrase to all processes!!!
         if(rank==0):
             file_size = os.stat('file_name').st_size
             output = master_process(file_name,file_size)
         else:
             slave_process(search_phrase)
+   print_data(output)
    comm.Barrier()
    t_diff = MPI.Wtime()-t_start
-   '''
+
 #use numpy
 
 
