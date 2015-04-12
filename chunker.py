@@ -89,7 +89,6 @@ def read_in_chunks(file_object, chunk_size=1024):
 
 def process_data(data_chunk,phrase):
    out1 = search_term(parse_chunk(data_chunk), phrase)
-   print_data(out1)
    return out1
 
 def master_process(file_name,file_size):
@@ -139,9 +138,11 @@ def main():
    comm.Barrier()
    t_start = MPI.Wtime()
    if size==1:
+        print "Hello! I'm rank %d from %d running in total..." % (comm.rank, comm.size)
         output = single_process_search(file_name,search_phrase)
    else:
         if(rank==0):
+            print "Hello! I'm rank %d from %d running in total..." % (comm.rank, comm.size)
             file_size = os.stat('file_name').st_size
             output = master_process(file_name,file_size)
         else:
@@ -149,6 +150,7 @@ def main():
    print_data(output)
    comm.Barrier()
    t_diff = MPI.Wtime()-t_start
+   print t_diff
 
 #use numpy
 
