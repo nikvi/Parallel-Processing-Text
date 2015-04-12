@@ -100,8 +100,9 @@ def master_process(file_name,file_size):
      next(reader)
      count =1
      for chunk in gen_chunks(reader,10):
-         comm.send(obj=chunk, dest=count, tag=WORKTAG)
+         comm.send(chunk, dest=count, tag=WORKTAG)
          count+=1
+         
      for i in range(1,count):
         data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
         summary = merge_search(summary,data)
