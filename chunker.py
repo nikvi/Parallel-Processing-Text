@@ -104,7 +104,7 @@ def master_process(file_name,file_size):
          comm.send(chunk, dest=count, tag=WORKTAG)
          count+=1
          batch_send += 1
-         if count>size:
+         if count>=size:
              count==1
 
      for i in range(1,batch_send):
