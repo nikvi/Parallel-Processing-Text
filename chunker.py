@@ -140,14 +140,16 @@ def main():
    if size==1:
         print "Hello! I'm rank %d from %d running in total..." % (comm.rank, comm.size)
         output = single_process_search(file_name,search_phrase)
+        print_data(output)
    else:
         if(rank==0):
             print "Hello! I'm rank %d from %d running in total..." % (comm.rank, comm.size)
             file_size = os.stat('file_name').st_size
             output = master_process(file_name,file_size)
+            print_data(output)
         else:
             slave_process(search_phrase)
-   print_data(output)
+
    comm.Barrier()
    t_diff = MPI.Wtime()-t_start
    print t_diff
