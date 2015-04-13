@@ -7,16 +7,15 @@ import numpy as np
 import itertools
 from collections import Counter
 from json import loads
+import pprint
 
 csv_delimiter = ','
 WORKTAG = 1
 DIETAG  = 0
 
-
 #single process search
 def single_process_search(file_name,search_phrase):
-     out1 = search_term(open_with_python_csv_list(file_name), search_phrase)
-     print_data(out1)
+     return search_term(open_with_python_csv_list(file_name), search_phrase)
 
 def open_with_python_csv_list(filename):
     def yield_fn():
@@ -91,25 +90,29 @@ def process_data(data_chunk,phrase):
    out1 = search_term(parse_chunk(data_chunk), phrase)
    return out1
 
-def master_process(file_name,file_size):
+def master_process(file_name):
      summary = {}
      comm = MPI.COMM_WORLD
      size = comm.size
-     chunk_size = file_size/size
+     chunk_size = 10 #file_size/size
      reader = csv.reader(open(file_name, 'rb'), delimiter=csv_delimiter, quotechar='\"')
      next(reader)
      count = 1
+     chunks_sent = 1
      for chunk in gen_chunks(reader,chunk_size):
+         print 'sending chunk to', str(count), len(chunk)
          comm.send(chunk, dest=count, tag=WORKTAG)
-         count+=1
+         count += 1
+         chunks_sent += 1
          if count >= size:
-             count=1
-
-     for i in range(1,size):
+             count = 1
+     
+     print 'expects ', str(chunks_sent)
+     for i in range(1, chunks_sent):
         data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
         summary = merge_search(summary,data)
 
-     for i in range(1,size):
+     for i in range(1, size):
         comm.send(obj=None, dest=i, tag=DIETAG)
      return summary
 
@@ -118,9 +121,17 @@ def slave_process(search_phrase):
     status = MPI.Status()
     while True:
         data = comm.recv(obj=None, source=0, tag=MPI.ANY_TAG, status=status)
-        if status.Get_tag(): break
+        if status.Get_tag() == DIETAG: break
         comm.send(obj=process_data(data,search_phrase), dest=0)
 
+def write_data(data, time, outfile):
+  with open(outfile, 'w') as out:
+    out.write("Count:" + str(data["count"]) + os.linesep)
+    out.write("Mentions" + os.linesep)
+    pprint.pprint(Counter(data['mentions']).most_common(10), out, indent=4)
+    out.write("Hashtags" + os.linesep)
+    pprint.pprint(Counter(data['hashtags']).most_common(10), out, indent=4)
+    out.write(os.linesep + str(time))
 
 #print provided data
 def print_data(out_put):
@@ -132,30 +143,32 @@ def print_data(out_put):
     print hashtags_t
 
 #how to chunk data and send
-def main():
+def search(file_name, search_phrase, outfile):
+   print file_name, search_phrase, outfile
    comm = MPI.COMM_WORLD
    size= comm.size
    rank=comm.rank
-   file_name = "miniTwitter.csv"
-   search_phrase ="how"
+   #file_name = "miniTwitter.csv"
+   #search_phrase ="how"
    comm.Barrier()
    t_start = MPI.Wtime()
-   if size==1:
+   if size == 1:
         print "Hello! I'm rank %d from %d running in total..." % (rank,size)
         output = single_process_search(file_name,search_phrase)
-        print_data(output)
+        write_data(output, MPI.Wtime() - t_start, outfile)
    else:
         if(rank==0):
             print "Hello! I'm rank %d from %d running in total..." % (rank,size)
-            file_size = os.stat(file_name).st_size
-            output = master_process(file_name,200)
-            print_data(output)
+            #file_size = os.stat(file_name).st_size
+            output = master_process(file_name)
+            write_data(output, MPI.Wtime() - t_start, outfile)
+            #print MPI.Wtime() - t_start
         else:
             slave_process(search_phrase)
 
    comm.Barrier()
-   t_diff = MPI.Wtime()-t_start
-   print t_diff
+   #t_diff = MPI.Wtime()-t_start
+   #print t_diff
 
 #use numpy
 
@@ -182,5 +195,13 @@ def sample_chunk():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description='Run search on tweets')
+    parser.add_argument('filename', metavar='F', type=str, nargs=1, help='file containing tweets')
+    parser.add_argument('searchterm', metavar='ST', type=str, nargs=1, help='term to search')
+    parser.add_argument('outfile', metavar='OF', type=str, nargs=1, help='file to output results')
+    args = parser.parse_args()
+    #print args
+    search(args.filename[0], args.searchterm[0], args.outfile[0])
+    #main()
     #sample_chunk()
